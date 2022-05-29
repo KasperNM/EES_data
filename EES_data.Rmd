@@ -1,0 +1,210 @@
+---
+title: "EES_data"
+author: "Kasper"
+date: "25/05/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#Loading in data from 2009
+#Downloading Haven package to load in SAV file
+library(haven)
+library(tidyverse)
+install.packages("googleLanguageR")
+install.packages("cld2")
+library(googleLanguageR)
+library(cld2)
+
+subset_2019$language_code = 0
+
+for (i in 1:nrow(subset_2019)){
+  if (subset_2019$hCountry!=18){
+    subset_2019$language_code[i] <- detect_language(subset_2019$Q1_1[i], plain_text = FALSE, lang_code = TRUE)
+  }
+  else {
+    subset_2019$language_code[i] <- "lt"
+  }
+  
+}
+
+?detect_language
+
+for (i in 1:5000){
+  #print(subset_2019$Q1_1[i])
+  subset_2019$language_code[10000+i] <- detect_language(subset_2019$Q1_1[10000+i], plain_text = FALSE, lang_code = TRUE)
+}
+
+test1 <- subset(subset_2019[16500:17000,])
+
+for (i in 1:2500){
+  #print(subset_2019$Q1_1[i])
+  subset_2019$language_code[15000+i] <- detect_language(subset_2019$Q1_1[15000+i], plain_text = FALSE, lang_code = TRUE)
+}
+
+print(subset_2019$language_code[12005])
+
+for (i in 1:500){
+  #print(test1$Q1_1[i])
+  test1$language_code[i] <- detect_language(test1$Q1_1[i], plain_text = FALSE, lang_code = TRUE)
+}
+
+#17036
+
+gl_auth("google_api_auth.json")
+#<- detect_language(subset_2019$Q1_1[i], plain_text = TRUE, lang_code = TRUE)
+#detect_language(subset_2019$Q1_1[4], plain_text = TRUE, lang_code = TRUE)
+
+df_2009 = read_sav("ZA5055_v1-1-1.sav")
+df_2019 = read_sav("ZA7581_v2-0-1.sav")
+
+subset_2019 = select(df_2019, "Q1_1", "Q2", "hCountry")
+subset_2019$dummyVariable <- 0
+subset_new2019 <- subset(subset_2019[1:1000,])
+
+str(subset_new2019)
+
+str(subset_2009)
+
+attributes(subset_2009$q1)
+
+install.packages("labelled")
+
+
+??write.xlsx
+
+getwd()
+
+write_excel_csv(subset_new2019,"/Users/kaspermichelsen/EES_data/test.xlsx")
+
+df_2004 = read_sav("ZA4566.sav")
+
+subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4")
+str(subset_2009)
+options(scipen = n)
+format(df_2009$t100[3], scientific = FALSE)
+
+getGoogleLanguages()
+
+test2 <- read_csv("test - test.csv")
+```
+
+```{r}
+#2009
+#Loading in data from 2009
+#Downloading Haven package to load in SAV file
+library(haven)
+library(tidyverse)
+#df_2009 = read_sav("ZA5055_v1-1-1.sav")
+#Make a subset with columns (ID, q1, country, party to help with q1)
+subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4", "q2", "q3")
+
+#Create a new empty column for the name of the parties
+subset_2009$partyname <- 0
+
+#extracting all the numbers and the corresponding labels in a df
+library(utils)
+attributes2009party <- stack(attr(subset_2009$q4, 'labels'))
+
+#Creating a duplicate df of the attribute DF
+newA2009P <- as.data.frame(attributes2009party)
+
+#Make the labels as.character instead of weird format
+newA2009P$ind <- as.character(newA2009P$ind)
+
+#Doing the same for the subset data and making the numbers as.numeric for the 'party' question. This will make the loop easier run. 
+newS2009 <- as.data.frame(subset_2009)
+newS2009$q4 <- as.numeric(newS2009$q4)
+
+#Make a function that inserts party-labels back into the dataframe 
+for (i in 1:nrow(subset_2009)){
+  labelvalue1 <- newS2009$q4[i]
+  for (j in 1:nrow(attributes2009party)){
+    labelvalue2 <- newA2009P$values[j]
+    labelname <- newA2009P$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue1 == labelvalue2) {
+      #Insert the new row with labels into the subset_2009 df
+      subset_2009$partyname[i] <- labelname
+    }
+  }
+}
+
+#Make a column with the labels of the most important problem
+attributes2009 <- stack(attr(subset_2009$q1, 'labels'))
+newS2009$q1 <- as.numeric(newS2009$q1)
+newA2009 <- as.data.frame(attributes2009)
+newA2009$ind <- as.character(newA2009$ind)
+subset_2009$MIP_label <- 0
+
+#Function to insert labels of MIP into the dataset
+for (i in 1:nrow(subset_2009)){
+  labelvalue3 <- newS2009$q1[i]
+  for (j in 1:nrow(attributes2009)){
+    labelvalue4 <- newA2009$values[j]
+    labelname1 <- newA2009$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue3 == labelvalue4) {
+      #Insert the new row with labels into the subset_2009 df
+      subset_2009$MIP_label[i] <- labelname1
+    }
+  }
+}
+
+#Make an if-statement that puts 1 into all climate-related problems and 0 into non-climate related problems (for the MIP)
+subset_2009$MIP_climate <- 0
+
+for (i in 1:nrow(subset_2009)){
+  if (newS2009$q1[i] == 2 || newS2009$q1[i] == 8 || newS2009$q1[i] == 86 || newS2009$q1[i] == 87) {
+    subset_2009$MIP_climate[i] <- 1
+  }
+  else {
+    subset_2009$MIP_climate[i] <- 0
+  }
+}
+
+#Make a dummy variable with 1 if respondents named climate as a problem at all and 0 if the did not
+subset_2009$climate_in_general <- 0
+
+newS2009$q2 <- as.numeric(newS2009$q2)
+newS2009$q3 <- as.numeric(newS2009$q3)
+
+#Check if attributes are the same for all three questions
+attributes2009 <- stack(attr(subset_2009$q1, 'labels'))
+attributes2009_q2 <- stack(attr(df_2009$q2, 'labels'))
+attributes2009_q3 <- stack(attr(df_2009$q3, 'labels'))
+#Luckily it is the same
+for (i in 1:nrow(subset_2009)){
+  if (newS2009$q1[i] == 2 || newS2009$q1[i] == 8 || newS2009$q1[i] == 86 || newS2009$q1[i] == 87 || newS2009$q2[i] == 2 || newS2009$q2[i] == 8 || newS2009$q2[i] == 86 || newS2009$q2[i] == 87 || newS2009$q3[i] == 2 || newS2009$q3[i] == 8 || newS2009$q3[i] == 86 || newS2009$q3[i] == 87) {
+    subset_2009$climate_in_general[i] <- 1
+  }
+  else {
+    subset_2009$climate_in_general[i] <- 0
+  }
+}
+
+write_excel_csv(subset_2009,"/Users/kaspermichelsen/EES_data/2009_test.xlsx")
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
