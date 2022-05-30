@@ -98,9 +98,9 @@ test2 <- read_csv("test - test.csv")
 #Downloading Haven package to load in SAV file
 library(haven)
 library(tidyverse)
-df_2009 = read_sav("ZA5055_v1-1-1.sav")
+#df_2009 = read_sav("ZA5055_v1-1-1.sav")
 #Make a subset with columns (ID, q1, country, party to help with q1)
-subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4", "q2", "q3")
+subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4", "q2", "q3", "t102")
 
 #Create a new empty column for the name of the parties
 subset_2009$partyname <- 0
@@ -129,6 +129,36 @@ for (i in 1:nrow(subset_2009)){
     if (labelvalue1 == labelvalue2) {
       #Insert the new row with labels into the subset_2009 df
       subset_2009$partyname[i] <- labelname
+    }
+  }
+}
+
+#country label in the subset
+attributes2009country <- stack(attr(df_2009$t102, 'labels'))
+
+#Create a new empty column for the name of the parties
+subset_2009$countryName <- 0
+
+#Creating a duplicate df of the attribute DF
+newC2009 <- as.data.frame(attributes2009country)
+
+#Make the labels as.character instead of weird format
+newC2009$ind <- as.character(newC2009$ind)
+
+#Doing the same for the subset data and making the numbers as.numeric for the 'party' question. This will make the loop easier run. 
+newS2009 <- as.data.frame(subset_2009)
+newS2009$t102 <- as.numeric(newS2009$t102)
+
+#Make a function that inserts party-labels back into the dataframe 
+for (i in 1:nrow(subset_2009)){
+  labelvalue10 <- newS2009$t102[i]
+  for (j in 1:nrow(attributes2009country)){
+    labelvalue11 <- newC2009$values[j]
+    labelname10 <- newC2009$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue10 == labelvalue11) {
+      #Insert the new row with labels into the subset_2009 df
+      subset_2009$countryName[i] <- labelname10
     }
   }
 }
@@ -186,7 +216,14 @@ for (i in 1:nrow(subset_2009)){
   }
 }
 
-write_excel_csv(subset_2009,"/Users/kaspermichelsen/EES_data/2009_test.xlsx")
+summary_2009 <- subset_2009 %>% group_by(countryName) %>% summarise(sum(climate_in_general==1))
+
+testest1 <- subset_2009 %>% count(countryName)
+
+summary_2009 <- merge.data.frame(summary_2009, testest1, by="countryName")
+
+write_excel_csv(subset_2009,"/Users/kaspermichelsen/EES_data/2009_subset.xlsx")
+write_excel_csv(summary_2009, "/Users/kaspermichelsen/EES_data/2009_summary.xlsx")
 ```
 
 
@@ -251,6 +288,25 @@ for (i in 1:nrow(subset_1999)){
     subset_1999$MIP_climate[i] <- 0
   }
 }
+
+#Environment problem at all
+subset_1999$climate_in_general <- 0
+
+for (i in 1:nrow(subset_1999)){
+  if (subset_test1999$var013[i] == 60 || subset_test1999$var013[i] == 61 || subset_test1999$var014[i] == 60 || subset_test1999$var014[i] == 61 || subset_test1999$var015[i] == 60 || subset_test1999$var015[i] == 61 || subset_test1999$var016[i] == 60 || subset_test1999$var016[i] == 61 || subset_test1999$var017[i] == 60 || subset_test1999$var017[i] == 61 || subset_test1999$var018[i] == 60 || subset_test1999$var018[i] == 61 || subset_test1999$var019[i] == 60 || subset_test1999$var019[i] == 61) {
+    subset_1999$climate_in_general[i] <- 1
+  }
+  else {
+    subset_1999$climate_in_general[i] <- 0
+  }
+}
+library(dplyr)
+
+summary_1999 <- subset_1999 %>% group_by(country_label) %>% summarise(sum(climate_in_general==1))
+
+testest <- subset_1999 %>% count(country_label)
+
+summary_1999 <- merge.data.frame(summary_1999, testest, by="country_label")
 
 party_1999 <- stack(attr(df_1999$var020, 'labels'))
 str(subset_1999$var020)
@@ -420,7 +476,8 @@ for (i in 1:nrow(subset_test1999)) {
   }
 }
   
-    
+write_excel_csv(subset_1999,"/Users/kaspermichelsen/EES_data/1999_subset.xlsx")
+write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx")
 ```
 
 ## R Markdown
