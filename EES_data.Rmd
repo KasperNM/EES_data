@@ -233,7 +233,10 @@ library(haven)
 library(tidyverse)
 df_2014 = read_sav("ZA5160_v4-0-0.sav")
 
-q1_test <- stack(attr(df_2014$q1_2, 'labels'))
+q1_testnew <- stack(attr(df_2014$qpp1aO_EES, 'labels'))
+q1_testnewb <- stack(attr(df_2014$qpp1bO_EES, 'labels'))
+countries2014 <- stack(attr(df_2014$countrycode, 'labels'))
+
 
 ```
 
@@ -246,7 +249,54 @@ df_1994 = read_sav("ZA2865.sav")
 df_1994_test <- read_por("ZA2865.por")
 
 q1_test1 <- stack(attr(df_1994$v77, 'labels'))
+countries1994 <- stack(attr(subset_1994$country, 'labels'))
 subset_1994 <- select(df_1994,"id", "country", "v77", "v78", "v79")
+#Only taking the rows with answers for 77, 78 and 79 (the Post-election main-study)
+newsubset_1994 <- subset_1994[26476:39571,]
+numsubset1994 <- newsubset_1994
+numsubset1994$v77 <- as.numeric(numsubset1994$v77)
+numsubset1994$v78 <- as.numeric(numsubset1994$v78)
+numsubset1994$v79 <- as.numeric(numsubset1994$v79)
+newsubset_1994$climate_in_general <- 0
+
+for (i in 1:nrow(newsubset_1994)){
+  if (numsubset1994$v77[i] == 9 || numsubset1994$v78[i] == 9 || numsubset1994$v79[i] == 9) {
+    newsubset_1994$climate_in_general[i] <- 1
+  }
+  else {
+    numsubset1994$climate_in_general[i] <- 0
+  }
+}
+
+#Creating a country label for each observation
+
+numsubset1994$country <- as.numeric(numsubset1994$country)
+countries1994$values <- as.numeric(countries1994$values)
+countries1994$ind <- as.character(countries1994$ind)
+
+newsubset_1994$Country_name <- 0
+#Inserting country-label
+for (i in 1:nrow(newsubset_1994)){
+  labelvalue1994 <- numsubset1994$country[i]
+  for (j in 1:nrow(countries1994)){
+    labelvalue1994_2 <- countries1994$values[j]
+    labelname1994 <- countries1994$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue1994 == labelvalue1994_2) {
+      #Insert the new row with labels into the subset_2009 df
+      newsubset_1994$Country_name[i] <- labelname1994
+    }
+  }
+}
+
+summary_1994 <- newsubset_1994 %>% group_by(Country_name) %>% summarise(sum(climate_in_general==1))
+
+testest1994 <- newsubset_1994 %>% count(Country_name)
+
+summary_1994 <- merge.data.frame(summary_1994, testest1994, by="Country_name")
+
+write_excel_csv(newsubset_1994,"/Users/kaspermichelsen/EES_data/1994_subset.xlsx")
+write_excel_csv(summary_1994, "/Users/kaspermichelsen/EES_data/1994_summary.xlsx")
 ```
 
 
@@ -480,7 +530,54 @@ write_excel_csv(subset_1999,"/Users/kaspermichelsen/EES_data/1999_subset.xlsx")
 write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx")
 ```
 
+
+```{r}
+#2004
+#A dummy variable is already created in the dataset (whether environment is mentioned or not) (read EES 2004 codebook p. 70)
+#df_2004 = read_sav("ZA4566.sav")
+subset_2004 <- select(df_2004, "country", "idnum", "v285")
+
+#country labels
+countries2004 <- stack(attr(subset_2004$country, 'labels'))
+
+test2004 <- subset_2004
+test2004$country <- as.numeric(test2004$country)
+countries2004$values <- as.numeric(countries2004$values)
+countries2004$ind <- as.character(countries2004$ind)
+
+subset_2004$country_name <- 0
+#Inserting country-label
+for (i in 1:nrow(test2004)){
+  labelvalue2004 <- test2004$country[i]
+  for (j in 1:nrow(countries2004)){
+    labelvalue2004_2 <- countries2004$values[j]
+    labelname2004 <- countries2004$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue2004 == labelvalue2004_2) {
+      #Insert the new row with labels into the subset_2009 df
+      subset_2004$country_name[i] <- labelname2004
+    }
+  }
+}
+
+summary_2004 <- subset_2004 %>% group_by(country_name) %>% summarise(sum(v285==1))
+
+testest2004 <- subset_2004 %>% count(country_name)
+
+summary_2004 <- merge.data.frame(summary_2004, testest2004, by="country_name")
+
+write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset.xlsx")
+write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx")
+```
+
+
+```{r}
+
+```
+
+
 ## R Markdown
+
 
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
