@@ -231,13 +231,55 @@ write_excel_csv(summary_2009, "/Users/kaspermichelsen/EES_data/2009_summary.xlsx
 #2014
 library(haven)
 library(tidyverse)
-df_2014 = read_sav("ZA5160_v4-0-0.sav")
+#df_2014 = read_sav("ZA5160_v4-0-0.sav")
 
 q1_testnew <- stack(attr(df_2014$qpp1aO_EES, 'labels'))
 q1_testnewb <- stack(attr(df_2014$qpp1bO_EES, 'labels'))
 countries2014 <- stack(attr(df_2014$countrycode, 'labels'))
 
+subset_2014 <- select(df_2014, "countrycode", "respid", "qpp1aO_EES", "qpp1bO_EES")
 
+numsubset_2014 <- subset_2014
+numsubset_2014$countrycode <- as.numeric(numsubset_2014$countrycode)
+countries2014$values <- as.numeric(countries2014$values)
+countries2014$ind <- as.character(countries2014$ind)
+
+subset_2014$Country_name <- 0
+#Inserting country-label
+for (i in 1:nrow(subset_2014)){
+  labelvalue2014 <- numsubset_2014$countrycode[i]
+  for (j in 1:nrow(countries2014)){
+    labelvalue2014_2 <- countries2014$values[j]
+    labelname2014 <- countries2014$ind[j]
+    #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
+    if (labelvalue2014 == labelvalue2014_2) {
+      #Insert the new row with labels into the subset_2009 df
+      subset_2014$Country_name[i] <- labelname2014
+    }
+  }
+}
+
+numsubset_2014$qpp1aO_EES <- as.numeric(numsubset_2014$qpp1aO_EES)
+numsubset_2014$qpp1bO_EES <- as.numeric(numsubset_2014$qpp1bO_EES)
+subset_2014$climate_in_general <- 0
+
+for (i in 1:nrow(subset_2014)){
+  if (numsubset_2014$qpp1aO_EES[i] == 2 || numsubset_2014$qpp1aO_EES[i] == 8 || numsubset_2014$qpp1aO_EES[i] == 86 || numsubset_2014$qpp1aO_EES[i] == 87 || numsubset_2014$qpp1bO_EES[i] == 2 || numsubset_2014$qpp1bO_EES[i] == 8 || numsubset_2014$qpp1bO_EES[i] == 86 || numsubset_2014$qpp1bO_EES[i] == 87) {
+    subset_2014$climate_in_general[i] <- 1
+  }
+  else {
+    subset_2014$climate_in_general[i] <- 0
+  }
+}
+
+summary_2014 <- subset_2014 %>% group_by(Country_name) %>% summarise(sum(climate_in_general==1))
+
+testest2014 <- subset_2014 %>% count(Country_name)
+
+summary_2014 <- merge.data.frame(summary_2014, testest2014, by="Country_name")
+
+write_excel_csv(subset_2014,"/Users/kaspermichelsen/EES_data/2014_subset.xlsx")
+write_excel_csv(summary_2014, "/Users/kaspermichelsen/EES_data/2014_summary.xlsx")
 ```
 
 
@@ -264,7 +306,7 @@ for (i in 1:nrow(newsubset_1994)){
     newsubset_1994$climate_in_general[i] <- 1
   }
   else {
-    numsubset1994$climate_in_general[i] <- 0
+    newsubset1994$climate_in_general[i] <- 0
   }
 }
 
@@ -572,7 +614,20 @@ write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx"
 
 
 ```{r}
+#2019
+subset_2019_new <- read_csv("problemcoding - Tabellenblatt1.csv")
+str(subset_2019_new)
+subset_2019_new1 <- subset_2019_new %>%
+    mutate(`Environment ? (1/0)` = if_else(is.na(`Environment ? (1/0)`), 0, `Environment ? (1/0)`))
 
+summary_2019 <- subset_2019_new1 %>% group_by(countrycode) %>% summarise(sum(`Environment ? (1/0)`==1))
+
+testest2019 <- subset_2019_new1 %>% count(countrycode)
+
+summary_2019 <- merge.data.frame(summary_2019, testest2019, by="countrycode")
+
+write_excel_csv(subset_2019_new1,"/Users/kaspermichelsen/EES_data/2019_subset.xlsx")
+write_excel_csv(summary_2019,"/Users/kaspermichelsen/EES_data/2019_summary.xlsx")
 ```
 
 
