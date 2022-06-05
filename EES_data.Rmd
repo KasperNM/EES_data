@@ -236,6 +236,7 @@ library(tidyverse)
 q1_testnew <- stack(attr(df_2014$qpp1aO_EES, 'labels'))
 q1_testnewb <- stack(attr(df_2014$qpp1bO_EES, 'labels'))
 countries2014 <- stack(attr(df_2014$countrycode, 'labels'))
+parties <- stack(attr(df_2004$v029, 'labels'))
 
 subset_2014 <- select(df_2014, "countrycode", "respid", "qpp1aO_EES", "qpp1bO_EES")
 
@@ -577,10 +578,11 @@ write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx"
 #2004
 #A dummy variable is already created in the dataset (whether environment is mentioned or not) (read EES 2004 codebook p. 70)
 #df_2004 = read_sav("ZA4566.sav")
-subset_2004 <- select(df_2004, "country", "idnum", "v285")
+subset_2004 <- select(df_2004, "country", "idnum", "v285", "v015", "v016", "v017", "v018", "v019", "v020", "v021", "v022", "v023", "v024", "v025", "v026", "v027", "v028", "v029")
 
 #country labels
 countries2004 <- stack(attr(subset_2004$country, 'labels'))
+problems2004 <- stack(attr(subset_2004$v028, 'labels'))
 
 test2004 <- subset_2004
 test2004$country <- as.numeric(test2004$country)
@@ -602,6 +604,86 @@ for (i in 1:nrow(test2004)){
   }
 }
 
+subset_2004$climate_in_general <- 0
+str(subset_2004)
+#Making all the answers numeric instead of weird stata-format
+test2004$v015 <- as.numeric(test2004$v015)
+test2004$v016 <- as.numeric(test2004$v016)
+test2004$v017 <- as.numeric(test2004$v017)
+test2004$v018 <- as.numeric(test2004$v018)
+test2004$v019 <- as.numeric(test2004$v019)
+test2004$v020 <- as.numeric(test2004$v020)
+test2004$v021 <- as.numeric(test2004$v021)
+test2004$v022 <- as.numeric(test2004$v022)
+test2004$v023 <- as.numeric(test2004$v023)
+test2004$v024 <- as.numeric(test2004$v024)
+test2004$v025 <- as.numeric(test2004$v025)
+test2004$v026 <- as.numeric(test2004$v026)
+test2004$v027 <- as.numeric(test2004$v027)
+test2004$v028 <- as.numeric(test2004$v028)
+
+#All NA's replaced with 0 (we can do this because we are not looking for 0's when looking for environment answers)
+test2004[is.na(test2004)] <- 0
+
+#In the general coding scheme 60 and 61 are environment related. countries with unique coding schemes: 1=Austria, 3=Britain, 4=Cyprus, 9=France, 13=Ireland (follwing the general coding scheme but had an extra code for waste management and pollution), 17=Luxembourg.  
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==1 || test2004$country[i]==3 || test2004$country[i]==4 || test2004$country[i]==9 || test2004$country[i]==13 || test2004$country[i]==17){
+    subset_2004$climate_in_general[i] <- 0
+  }
+  else{
+    if (test2004$v015[i]==60 || test2004$v015[i]==61 || test2004$v016[i]==60 || test2004$v016[i]==61 || test2004$v017[i]==60 || test2004$v017[i]==61 || test2004$v018[i]==60 || test2004$v018[i]==61 || test2004$v019[i]==60 || test2004$v019[i]==61 || test2004$v020[i]==60 || test2004$v020[i]==61 || test2004$v021[i]==60 || test2004$v021[i]==61 || test2004$v022[i]==60 || test2004$v022[i]==61 || test2004$v023[i]==60 || test2004$v023[i]==61 || test2004$v024[i]==60 || test2004$v024[i]==61 || test2004$v025[i]==60 || test2004$v025[i]==61 || test2004$v026[i]==60 || test2004$v026[i]==61 || test2004$v027[i]==60 || test2004$v027[i]==61 || test2004$v028[i]==60 || test2004$v028[i]==61) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
+#Austria (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==1){
+    if (test2004$v028[i]==9) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
+#Britain (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==3){
+    if (test2004$v028[i]==25 || test2004$v028[i]==29 || test2004$v028[i]==47) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
+#Cyprus does not have an option to say environment in the survey (agriculture is the closest one)
+
+#France (44 and 45 concerned the environment)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==9){
+    if (test2004$v015[i]==44 || test2004$v015[i]==45 || test2004$v016[i]==44 || test2004$v016[i]==45 || test2004$v017[i]==44 || test2004$v017[i]==45 || test2004$v018[i]==44 || test2004$v018[i]==45 || test2004$v019[i]==44 || test2004$v019[i]==45 || test2004$v020[i]==44 || test2004$v020[i]==45 || test2004$v021[i]==44 || test2004$v021[i]==45 || test2004$v022[i]==44 || test2004$v022[i]==45 || test2004$v023[i]==44 || test2004$v023[i]==45 || test2004$v024[i]==44 || test2004$v024[i]==45 || test2004$v025[i]==44 || test2004$v025[i]==45 || test2004$v026[i]==44 || test2004$v026[i]==45 || test2004$v027[i]==44 || test2004$v027[i]==45 || test2004$v028[i]==44 || test2004$v028[i]==45) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
+#Ireland (had an extra option (3) connected to environment)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==13){
+    if (test2004$v015[i]==60 || test2004$v015[i]==61 || test2004$v015[i]==3 ||test2004$v016[i]==60 || test2004$v016[i]==61 || test2004$v016[i]==3 || test2004$v017[i]==60 || test2004$v017[i]==61 || test2004$v017[i]==3 || test2004$v018[i]==60 || test2004$v018[i]==61 || test2004$v018[i]==3 || test2004$v019[i]==60 || test2004$v019[i]==61 || test2004$v019[i]==3 || test2004$v020[i]==60 || test2004$v020[i]==61 || test2004$v020[i]==3 || test2004$v021[i]==60 || test2004$v021[i]==61 || test2004$v021[i]==3 || test2004$v022[i]==60 || test2004$v022[i]==61 || test2004$v022[i]==3 || test2004$v023[i]==60 || test2004$v023[i]==61 || test2004$v023[i]==3 || test2004$v024[i]==60 || test2004$v024[i]==61 || test2004$v024[i]==3 || test2004$v025[i]==60 || test2004$v025[i]==61 || test2004$v025[i]==3 || test2004$v026[i]==60 || test2004$v026[i]==61 || test2004$v026[i]==3 || test2004$v027[i]==60 || test2004$v027[i]==61 || test2004$v027[i]==3 || test2004$v028[i]==60 || test2004$v028[i]==61 || test2004$v028[i]==3) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
+#Luxembourg (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==17){
+    if (test2004$v028[i]==2) {
+      subset_2004$climate_in_general[i] <- 1
+    }
+  }
+}
+
 summary_2004 <- subset_2004 %>% group_by(country_name) %>% summarise(sum(v285==1))
 
 testest2004 <- subset_2004 %>% count(country_name)
@@ -610,6 +692,10 @@ summary_2004 <- merge.data.frame(summary_2004, testest2004, by="country_name")
 
 write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset.xlsx")
 write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx")
+
+summary_2004_new <- subset_2004 %>% group_by(country_name) %>% summarise(sum(climate_in_general==1))
+
+summary_2004_new <- merge.data.frame(summary_2004_new, testest2004, by="country_name")
 ```
 
 
@@ -630,6 +716,20 @@ write_excel_csv(subset_2019_new1,"/Users/kaspermichelsen/EES_data/2019_subset.xl
 write_excel_csv(summary_2019,"/Users/kaspermichelsen/EES_data/2019_summary.xlsx")
 ```
 
+```{r}
+#Parlgov
+Parlgov <- read_csv("parlgov - party.csv")
+parlgovtest <- select(Parlgov, "ees", "party_name_short", "party_name", "family_name", "left_right", "state_market", "liberty_authority", "eu_anti_pro")
+parlgovtest1 <- select(Parlgov, "ees")
+parlgovtest1 <- na.omit(parlgovtest1)
+pt <- merge.data.frame(parlgovtest, parlgovtest1, by="ees")
+
+merge2009parlgov <- subset_2009
+merge2009parlgov <- rename(merge2009parlgov, ees = q4)
+mp2009 <- merge.data.frame(merge2009parlgov, pt, by="ees")
+
+write_excel_csv(mp2009,"/Users/kaspermichelsen/EES_data/2009_parlgov_merge.xlsx")
+```
 
 ## R Markdown
 
