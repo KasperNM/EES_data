@@ -100,10 +100,10 @@ library(haven)
 library(tidyverse)
 #df_2009 = read_sav("ZA5055_v1-1-1.sav")
 #Make a subset with columns (ID, q1, country, party to help with q1)
-subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4", "q2", "q3", "t102")
+subset_2009 = select(df_2009, "t201c", "q1", "t100", "q4", "q2", "q3", "t102", "q27", "q28", "q87")
 
 #Create a new empty column for the name of the parties
-subset_2009$partyname <- 0
+subset_2009$partyname_q4 <- 0
 
 #extracting all the numbers and the corresponding labels in a df
 library(utils)
@@ -128,7 +128,7 @@ for (i in 1:nrow(subset_2009)){
     #If the number in q4 in the subset matches a number in the attribute df -     insert the corresponding label into a new column next to the number
     if (labelvalue1 == labelvalue2) {
       #Insert the new row with labels into the subset_2009 df
-      subset_2009$partyname[i] <- labelname
+      subset_2009$partyname_q4[i] <- labelname
     }
   }
 }
@@ -222,7 +222,7 @@ testest1 <- subset_2009 %>% count(countryName)
 
 summary_2009 <- merge.data.frame(summary_2009, testest1, by="countryName")
 
-write_excel_csv(subset_2009,"/Users/kaspermichelsen/EES_data/2009_subset.xlsx")
+write_excel_csv(subset_2009,"/Users/kaspermichelsen/EES_data/2009_subset_updated.xlsx")
 write_excel_csv(summary_2009, "/Users/kaspermichelsen/EES_data/2009_summary.xlsx")
 ```
 
@@ -238,7 +238,7 @@ q1_testnewb <- stack(attr(df_2014$qpp1bO_EES, 'labels'))
 countries2014 <- stack(attr(df_2014$countrycode, 'labels'))
 parties <- stack(attr(df_2004$v029, 'labels'))
 
-subset_2014 <- select(df_2014, "countrycode", "respid", "qpp1aO_EES", "qpp1bO_EES")
+subset_2014 <- select(df_2014, "countrycode", "respid", "qpp1aO_EES", "qpp1bO_EES", "qpp5_ees", "qpp6_ees", "qpp21_ees")
 
 numsubset_2014 <- subset_2014
 numsubset_2014$countrycode <- as.numeric(numsubset_2014$countrycode)
@@ -273,13 +273,26 @@ for (i in 1:nrow(subset_2014)){
   }
 }
 
+subset_2014$climate_MIP <- 0
+
+for (i in 1:nrow(subset_2014)){
+  if (numsubset_2014$qpp1aO_EES[i] == 2 || numsubset_2014$qpp1aO_EES[i] == 8 || numsubset_2014$qpp1aO_EES[i] == 86 || numsubset_2014$qpp1aO_EES[i] == 87) {
+    subset_2014$climate_MIP[i] <- 1
+  }
+  else {
+    subset_2014$climate_MIP[i] <- 0
+  }
+}
+
+partylabels_2014 <- stack(attr(df_2014$qpp5_ees, 'labels'))
+
 summary_2014 <- subset_2014 %>% group_by(Country_name) %>% summarise(sum(climate_in_general==1))
 
 testest2014 <- subset_2014 %>% count(Country_name)
 
 summary_2014 <- merge.data.frame(summary_2014, testest2014, by="Country_name")
 
-write_excel_csv(subset_2014,"/Users/kaspermichelsen/EES_data/2014_subset.xlsx")
+write_excel_csv(subset_2014,"/Users/kaspermichelsen/EES_data/2014_subset_updated.xlsx")
 write_excel_csv(summary_2014, "/Users/kaspermichelsen/EES_data/2014_summary.xlsx")
 ```
 
@@ -696,6 +709,9 @@ write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx"
 summary_2004_new <- subset_2004 %>% group_by(country_name) %>% summarise(sum(climate_in_general==1))
 
 summary_2004_new <- merge.data.frame(summary_2004_new, testest2004, by="country_name")
+
+write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset_new.xlsx")
+write_excel_csv(summary_2004_new,"/Users/kaspermichelsen/EES_data/2004_summary_new.xlsx")
 ```
 
 
@@ -706,13 +722,30 @@ str(subset_2019_new)
 subset_2019_new1 <- subset_2019_new %>%
     mutate(`Environment ? (1/0)` = if_else(is.na(`Environment ? (1/0)`), 0, `Environment ? (1/0)`))
 
+partyQuestions_2019 <- select(df_2019, "Q9_ees", "Q25_EES", "serial")
+
+partylabels_2019 <- stack(attr(df_2019$Q9_ees, 'labels'))
+probabilitylabels_2019 <- stack(attr(df_2019$q10_1, 'labels'))
+
+q10_subset <- select(df_2019, "serial", "respid", "countrycode", "q10_1", "q10_2", "q10_3", "q10_4", "q10_5", "q10_6", "q10_7", "q10_8", "q10_9", "q10_10")
+
+pivot2019 <- q10_subset %>% 
+  pivot_longer(q10_1: q10_2: q10_3: q10_4: q10_5: q10_6: q10_7: q10_8: q10_9: q10_10, "Vote_probability")
+
+CP <- read_csv("ZA7581_cp.csv")
+CP$Vote_probability <- CP$Q10_PTV
+
+df3 = merge(pivot2019, CP, by=c("countrycode","Vote_probability"))
+
+subset_2019_wParties <- merge.data.frame(subset_2019_new1, partyQuestions_2019, by="serial")
+
 summary_2019 <- subset_2019_new1 %>% group_by(countrycode) %>% summarise(sum(`Environment ? (1/0)`==1))
 
 testest2019 <- subset_2019_new1 %>% count(countrycode)
 
 summary_2019 <- merge.data.frame(summary_2019, testest2019, by="countrycode")
 
-write_excel_csv(subset_2019_new1,"/Users/kaspermichelsen/EES_data/2019_subset.xlsx")
+write_excel_csv(subset_2019_wParties,"/Users/kaspermichelsen/EES_data/2019_subset_updated_missingQ10.xlsx")
 write_excel_csv(summary_2019,"/Users/kaspermichelsen/EES_data/2019_summary.xlsx")
 ```
 
