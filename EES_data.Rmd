@@ -752,14 +752,26 @@ write_excel_csv(summary_2019,"/Users/kaspermichelsen/EES_data/2019_summary.xlsx"
 ```{r}
 #Parlgov
 Parlgov <- read_csv("parlgov - party.csv")
-parlgovtest <- select(Parlgov, "ees", "party_name_short", "party_name", "family_name", "left_right", "state_market", "liberty_authority", "eu_anti_pro")
+parlgovtest <- select(Parlgov, "ees", "party_name_short", "party_name", "party_name_english", "cmp")
+# df_for_merging <- read_csv("Mergedf - Ark1.csv")
+# parlgovtest <- rbind(parlgovtest,df_for_merging)
+
 parlgovtest1 <- select(Parlgov, "ees")
 parlgovtest1 <- na.omit(parlgovtest1)
+
+
+# EES_codes_2009 <- stack(attr(subset_2009$q87, 'labels'))
+# EES_codes_2009_test <- as.data.frame(EES_codes_2009$values[1:11])
+# EES_codes_2009_test$ees <- EES_codes_2009_test$`EES_codes_2009$values[1:11]`
+# EES_codes_2009_test$`EES_codes_2009$values[1:11]` <- NULL
+# parlgovtest1 <- rbind(parlgovtest1, EES_codes_2009_test)
+
 pt <- merge.data.frame(parlgovtest, parlgovtest1, by="ees")
 
 merge2009parlgov <- subset_2009
 merge2009parlgov <- rename(merge2009parlgov, ees = q4)
 mp2009 <- merge.data.frame(merge2009parlgov, pt, by="ees")
+
 
 write_excel_csv(mp2009,"/Users/kaspermichelsen/EES_data/2009_parlgov_merge.xlsx")
 ```
