@@ -752,11 +752,12 @@ write_excel_csv(summary_2019,"/Users/kaspermichelsen/EES_data/2019_summary.xlsx"
 ```{r}
 #Parlgov
 Parlgov <- read_csv("parlgov - party.csv")
-parlgovtest <- select(Parlgov, "ees", "party_name_short", "party_name", "party_name_english", "cmp")
-# df_for_merging <- read_csv("Mergedf - Ark1.csv")
-# parlgovtest <- rbind(parlgovtest,df_for_merging)
+parlgovtest <- select(Parlgov, "ees", "party_name_short", "party_name", "party_name_english", "cmp", "party_id")
+df_for_merging <- read_csv("Mergedf - Ark1.csv")
+df_for_merging$party_id <- NA
+parlgovtest <- rbind(parlgovtest,df_for_merging)
 
-parlgovtest1 <- select(Parlgov, "ees")
+parlgovtest1 <- select(parlgovtest, "ees")
 parlgovtest1 <- na.omit(parlgovtest1)
 
 
@@ -767,13 +768,34 @@ parlgovtest1 <- na.omit(parlgovtest1)
 # parlgovtest1 <- rbind(parlgovtest1, EES_codes_2009_test)
 
 pt <- merge.data.frame(parlgovtest, parlgovtest1, by="ees")
+write_csv(pt, "/Users/kaspermichelsen/EES_data/parlgov_merge_file.csv")
 
 merge2009parlgov <- subset_2009
 merge2009parlgov <- rename(merge2009parlgov, ees = q4)
 mp2009 <- merge.data.frame(merge2009parlgov, pt, by="ees")
+mp2009 <- rename(mp2009, Best_party_to_deal_with_MIP=ees)
+mp2009_new <- select(mp2009, "Best_party_to_deal_with_MIP", "MIP_climate", "climate_in_general", "party_name_short", "party_name_english", "party_id", "cmp", "countryName", "q27", "q28", "q87", "t100")
+
+NVA2009 <- read_csv("parlgov_merge_file_NVA - parlgov_merge_file.csv")
+VI2009 <- read_csv("parlgov_merge_file_VI - parlgov_merge_file.csv")
+PID2009 <- read_csv("parlgov_merge_file_PID - parlgov_merge_file.csv")
+
+mp2009NVA <- merge.data.frame(mp2009_new, NVA2009, by="q27")
+mp2009VI <- merge.data.frame(mp2009NVA, VI2009, by="q28")
+mpfinal <- merge.data.frame(mp2009VI, PID2009, by="q87")
+
+uniq1 <- unique(mp2009VI)
+
+mpfinal <- unique(mpfinal)
+mpfinal <- rename(mpfinal, National_Vote_Recall_NVA = q27)
+mpfinal <- rename(mpfinal, Vote_Intention_VI = q28)
+mpfinal <- rename(mpfinal, Party_Identification_PID = q87)
+Ccount2009 <- mpfinal %>% count(countryName)
+subset_2009_uniq <- unique(mp2009_new)
+Ccount2009_1 <- mp2009_new %>% count(countryName)
 
 
-write_excel_csv(mp2009,"/Users/kaspermichelsen/EES_data/2009_parlgov_merge.xlsx")
+write_excel_csv(mpfinal,"/Users/kaspermichelsen/EES_data/final2009.xlsx")
 ```
 
 ## R Markdown
