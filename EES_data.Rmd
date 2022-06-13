@@ -234,7 +234,10 @@ library(tidyverse)
 #df_2014 = read_sav("ZA5160_v4-0-0.sav")
 
 q1_testnew <- stack(attr(df_2014$qpp1aO_EES, 'labels'))
+parties2014 <- stack(attr(subset_2014$qpp5_ees, 'labels'))
+parties2019 <- stack(attr(df_2019$Q2_EES, 'labels'))
 q1_testnewb <- stack(attr(df_2014$qpp1bO_EES, 'labels'))
+
 countries2014 <- stack(attr(df_2014$countrycode, 'labels'))
 parties <- stack(attr(df_2004$v029, 'labels'))
 
@@ -306,8 +309,18 @@ df_1994_test <- read_por("ZA2865.por")
 
 q1_test1 <- stack(attr(df_1994$v77, 'labels'))
 countries1994 <- stack(attr(subset_1994$country, 'labels'))
-subset_1994 <- select(df_1994,"id", "country", "v77", "v78", "v79")
 #Only taking the rows with answers for 77, 78 and 79 (the Post-election main-study)
+subset_1994 <- select(df_1994,"id", "country", "v77", "v78", "v79", "V91_NAT", "V89_NAT", "V105_NAT")
+
+#Creating one column for V91
+party_subset_1994 <- df_1994[26476:39571,]
+party_subset_1994_v91 <- select(party_subset_1994, id, v91_bel, v91_den, v91_ege, v91_fra, v91_gb, v91_gre, v91_irl, v91_ita, v91_lux, v91_net, v91_nir, v91_por, v91_spa, v91_wge)
+
+ps_1994 <- party_subset_1994_v91 %>% 
+  pivot_longer(v91_bel: v91_den: v91_ege: v91_fra: v91_gb: v91_gre: v91_irl: v91_ita: v91_lux: v91_net: v91_nir: v91_por: v91_spa: v91_wge, "National_vote_recall")
+ps_1994 <- na.omit(ps_1994)
+
+
 newsubset_1994 <- subset_1994[26476:39571,]
 numsubset1994 <- newsubset_1994
 numsubset1994$v77 <- as.numeric(numsubset1994$v77)
@@ -345,6 +358,9 @@ for (i in 1:nrow(newsubset_1994)){
   }
 }
 
+summary_ps_1994 <- ps_1994 %>% count(National_vote_recall)
+
+
 summary_1994 <- newsubset_1994 %>% group_by(Country_name) %>% summarise(sum(climate_in_general==1))
 
 testest1994 <- newsubset_1994 %>% count(Country_name)
@@ -358,10 +374,10 @@ write_excel_csv(summary_1994, "/Users/kaspermichelsen/EES_data/1994_summary.xlsx
 
 ```{r}
 #1999
-df_1999 <- read_dta("P1560a.dta")
+#df_1999 <- read_dta("P1560a.dta")
 str(df_1999$var002)
 country_1999 <- stack(attr(df_1999$var002, 'labels'))
-subset_1999 <- select(df_1999, "var001", "var002", "var013", "var014", "var015", "var016", "var017", "var018", "var019", "var020")
+subset_1999 <- select(df_1999, "var001", "var002", "var013", "var014", "var015", "var016", "var017", "var018", "var019", "var020", "var079", "var096", "var097")
 
 subset_test1999 <- subset_1999
 subset_test1999$var002 <- as.numeric(subset_test1999$var002)
@@ -414,176 +430,178 @@ testest <- subset_1999 %>% count(country_label)
 
 summary_1999 <- merge.data.frame(summary_1999, testest, by="country_label")
 
-party_1999 <- stack(attr(df_1999$var020, 'labels'))
-str(subset_1999$var020)
-subset_test1999$var020[3]
-install.packages("readxl")
-library(readxl)
+#party_1999 <- stack(attr(df_1999$var020, 'labels'))
+#str(subset_1999$var020)
+#subset_test1999$var020[3]
+#install.packages("readxl")
+#library(readxl)
 #Made a sheet in excel with all the parties for the different countries with a corresponding value
-subset_test1999 <- subset_1999
-subset_test1999$var020 <- unclass(subset_test1999$var020)
-subset_test1999$var020 <- as.numeric(subset_test1999$var020)
-subset_1999$Party_name <- 0
-party_1999_new <- read_xlsx("partier_1999.xlsx")
+# subset_test1999 <- subset_1999
+# subset_test1999$var020 <- unclass(subset_test1999$var020)
+# subset_test1999$var020 <- as.numeric(subset_test1999$var020)
+# subset_1999$Party_name <- 0
+# party_1999_new <- read_xlsx("partier_1999.xlsx")
+# 
+# colnames(party_1999_new[1])
+# 
+# for (i in 1:nrow(subset_test1999)) {
+#   partyValue <- subset_test1999$var020[i]
+#   if (subset_test1999$country_label[i] == "Austria") {
+#     for (j in 1:nrow(party_1999_new)) {
+#       partyIndex <- party_1999_new$Value[j]
+#       partyname <- party_1999_new$Austria[j]
+#       if (partyValue == partyIndex){
+#          subset_1999$Party_name[i] <- partyname
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "UK") {
+#     for (uk in 1:nrow(party_1999_new)) {
+#       partyIndex1 <- party_1999_new$Value[uk]
+#       partyname1 <- party_1999_new$UK[uk]
+#       if (partyValue == partyIndex1){
+#          subset_1999$Party_name[i] <- partyname1
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Belgium") {
+#     for (bel in 1:nrow(party_1999_new)) {
+#       partyIndex2 <- party_1999_new$Value[bel]
+#       partyname2 <- party_1999_new$`Belgium-Flanders`[bel]
+#       if (partyValue == partyIndex2){
+#          subset_1999$Party_name[i] <- partyname2
+#       }
+#         
+#     }
+#   } 
+#   else if (subset_test1999$country_label[i] == "Denmark") {
+#     for (dk in 1:nrow(party_1999_new)) {
+#       partyIndex3 <- party_1999_new$Value[dk]
+#       partyname3 <- party_1999_new$Denmark[dk]
+#       if (partyValue == partyIndex3){
+#          subset_1999$Party_name[i] <- partyname3
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Germany") {
+#     for (ger in 1:nrow(party_1999_new)) {
+#       partyIndex4 <- party_1999_new$Value[ger]
+#       partyname4 <- party_1999_new$Germany[ger]
+#       if (partyValue == partyIndex4){
+#          subset_1999$Party_name[i] <- partyname4
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Finland") {
+#     for (fin in 1:nrow(party_1999_new)) {
+#       partyIndex5 <- party_1999_new$Value[fin]
+#       partyname5 <- party_1999_new$Finland[fin]
+#       if (partyValue == partyIndex5){
+#          subset_1999$Party_name[i] <- partyname5
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Sweden") {
+#     for (swe in 1:nrow(party_1999_new)) {
+#       partyIndex6 <- party_1999_new$Value[swe]
+#       partyname6 <- party_1999_new$Sweden[swe]
+#       if (partyValue == partyIndex6){
+#          subset_1999$Party_name[i] <- partyname6
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Spain") {
+#     for (sp in 1:nrow(party_1999_new)) {
+#       partyIndex7 <- party_1999_new$Value[sp]
+#       partyname7 <- party_1999_new$Spain[sp]
+#       if (partyValue == partyIndex7){
+#          subset_1999$Party_name[i] <- partyname7
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Greece") {
+#     for (gr in 1:nrow(party_1999_new)) {
+#       partyIndex8 <- party_1999_new$Value[gr]
+#       partyname8 <- party_1999_new$Greece[gr]
+#       if (partyValue == partyIndex8){
+#          subset_1999$Party_name[i] <- partyname8
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "France") {
+#     for (fr in 1:nrow(party_1999_new)) {
+#       partyIndex9 <- party_1999_new$Value[fr]
+#       partyname9 <- party_1999_new$France[fr]
+#       if (partyValue == partyIndex9){
+#          subset_1999$Party_name[i] <- partyname9
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Ireland") {
+#     for (ire in 1:nrow(party_1999_new)) {
+#       partyIndex10 <- party_1999_new$Value[ire]
+#       partyname10 <- party_1999_new$Ireland[ire]
+#       if (partyValue == partyIndex10){
+#          subset_1999$Party_name[i] <- partyname10
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Luxemburg") {
+#     for (lu in 1:nrow(party_1999_new)) {
+#       partyIndex11 <- party_1999_new$Value[lu]
+#       partyname11 <- party_1999_new$Luxembourg[lu]
+#       if (partyValue == partyIndex11){
+#          subset_1999$Party_name[i] <- partyname11
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Netherlands") {
+#     for (net in 1:nrow(party_1999_new)) {
+#       partyIndex12 <- party_1999_new$Value[net]
+#       partyname12 <- party_1999_new$Netherlands[net]
+#       if (partyValue == partyIndex12){
+#          subset_1999$Party_name[i] <- partyname12
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Italy") {
+#     for (it in 1:nrow(party_1999_new)) {
+#       partyIndex13 <- party_1999_new$Value[it]
+#       partyname13 <- party_1999_new$Italy[it]
+#       if (partyValue == partyIndex13){
+#          subset_1999$Party_name[i] <- partyname13
+#       }
+#         
+#     }
+#   }
+#   else if (subset_test1999$country_label[i] == "Portugal") {
+#     for (por in 1:nrow(party_1999_new)) {
+#       partyIndex14 <- party_1999_new$Value[por]
+#       partyname14 <- party_1999_new$Portugal[por]
+#       if (partyValue == partyIndex14){
+#          subset_1999$Party_name[i] <- partyname14
+#       }
+#         
+#     }
+#   }
+# }
 
-colnames(party_1999_new[1])
 
-for (i in 1:nrow(subset_test1999)) {
-  partyValue <- subset_test1999$var020[i]
-  if (subset_test1999$country_label[i] == "Austria") {
-    for (j in 1:nrow(party_1999_new)) {
-      partyIndex <- party_1999_new$Value[j]
-      partyname <- party_1999_new$Austria[j]
-      if (partyValue == partyIndex){
-         subset_1999$Party_name[i] <- partyname
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "UK") {
-    for (uk in 1:nrow(party_1999_new)) {
-      partyIndex1 <- party_1999_new$Value[uk]
-      partyname1 <- party_1999_new$UK[uk]
-      if (partyValue == partyIndex1){
-         subset_1999$Party_name[i] <- partyname1
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Belgium") {
-    for (bel in 1:nrow(party_1999_new)) {
-      partyIndex2 <- party_1999_new$Value[bel]
-      partyname2 <- party_1999_new$`Belgium-Flanders`[bel]
-      if (partyValue == partyIndex2){
-         subset_1999$Party_name[i] <- partyname2
-      }
-        
-    }
-  } 
-  else if (subset_test1999$country_label[i] == "Denmark") {
-    for (dk in 1:nrow(party_1999_new)) {
-      partyIndex3 <- party_1999_new$Value[dk]
-      partyname3 <- party_1999_new$Denmark[dk]
-      if (partyValue == partyIndex3){
-         subset_1999$Party_name[i] <- partyname3
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Germany") {
-    for (ger in 1:nrow(party_1999_new)) {
-      partyIndex4 <- party_1999_new$Value[ger]
-      partyname4 <- party_1999_new$Germany[ger]
-      if (partyValue == partyIndex4){
-         subset_1999$Party_name[i] <- partyname4
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Finland") {
-    for (fin in 1:nrow(party_1999_new)) {
-      partyIndex5 <- party_1999_new$Value[fin]
-      partyname5 <- party_1999_new$Finland[fin]
-      if (partyValue == partyIndex5){
-         subset_1999$Party_name[i] <- partyname5
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Sweden") {
-    for (swe in 1:nrow(party_1999_new)) {
-      partyIndex6 <- party_1999_new$Value[swe]
-      partyname6 <- party_1999_new$Sweden[swe]
-      if (partyValue == partyIndex6){
-         subset_1999$Party_name[i] <- partyname6
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Spain") {
-    for (sp in 1:nrow(party_1999_new)) {
-      partyIndex7 <- party_1999_new$Value[sp]
-      partyname7 <- party_1999_new$Spain[sp]
-      if (partyValue == partyIndex7){
-         subset_1999$Party_name[i] <- partyname7
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Greece") {
-    for (gr in 1:nrow(party_1999_new)) {
-      partyIndex8 <- party_1999_new$Value[gr]
-      partyname8 <- party_1999_new$Greece[gr]
-      if (partyValue == partyIndex8){
-         subset_1999$Party_name[i] <- partyname8
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "France") {
-    for (fr in 1:nrow(party_1999_new)) {
-      partyIndex9 <- party_1999_new$Value[fr]
-      partyname9 <- party_1999_new$France[fr]
-      if (partyValue == partyIndex9){
-         subset_1999$Party_name[i] <- partyname9
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Ireland") {
-    for (ire in 1:nrow(party_1999_new)) {
-      partyIndex10 <- party_1999_new$Value[ire]
-      partyname10 <- party_1999_new$Ireland[ire]
-      if (partyValue == partyIndex10){
-         subset_1999$Party_name[i] <- partyname10
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Luxemburg") {
-    for (lu in 1:nrow(party_1999_new)) {
-      partyIndex11 <- party_1999_new$Value[lu]
-      partyname11 <- party_1999_new$Luxembourg[lu]
-      if (partyValue == partyIndex11){
-         subset_1999$Party_name[i] <- partyname11
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Netherlands") {
-    for (net in 1:nrow(party_1999_new)) {
-      partyIndex12 <- party_1999_new$Value[net]
-      partyname12 <- party_1999_new$Netherlands[net]
-      if (partyValue == partyIndex12){
-         subset_1999$Party_name[i] <- partyname12
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Italy") {
-    for (it in 1:nrow(party_1999_new)) {
-      partyIndex13 <- party_1999_new$Value[it]
-      partyname13 <- party_1999_new$Italy[it]
-      if (partyValue == partyIndex13){
-         subset_1999$Party_name[i] <- partyname13
-      }
-        
-    }
-  }
-  else if (subset_test1999$country_label[i] == "Portugal") {
-    for (por in 1:nrow(party_1999_new)) {
-      partyIndex14 <- party_1999_new$Value[por]
-      partyname14 <- party_1999_new$Portugal[por]
-      if (partyValue == partyIndex14){
-         subset_1999$Party_name[i] <- partyname14
-      }
-        
-    }
-  }
-}
   
-write_excel_csv(subset_1999,"/Users/kaspermichelsen/EES_data/1999_subset.xlsx")
-write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx")
+write_dta(subset_1999,"/Users/kaspermichelsen/EES_data/df1999.dta")
+# write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx")
 ```
 
 
@@ -591,7 +609,7 @@ write_excel_csv(summary_1999,"/Users/kaspermichelsen/EES_data/1999_summary.xlsx"
 #2004
 #A dummy variable is already created in the dataset (whether environment is mentioned or not) (read EES 2004 codebook p. 70)
 #df_2004 = read_sav("ZA4566.sav")
-subset_2004 <- select(df_2004, "country", "idnum", "v285", "v015", "v016", "v017", "v018", "v019", "v020", "v021", "v022", "v023", "v024", "v025", "v026", "v027", "v028", "v029")
+subset_2004 <- select(df_2004, "country", "idnum", "v285", "v015", "v016", "v017", "v018", "v019", "v020", "v021", "v022", "v023", "v024", "v025", "v026", "v027", "v028", "v029", "v113", "v114", "v211")
 
 #country labels
 countries2004 <- stack(attr(subset_2004$country, 'labels'))
@@ -697,21 +715,79 @@ for (i in 1:nrow(subset_2004)){
   }
 }
 
-summary_2004 <- subset_2004 %>% group_by(country_name) %>% summarise(sum(v285==1))
+subset_2004$MIP_climate <- 0
+#MIP column
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==1 || test2004$country[i]==3 || test2004$country[i]==4 || test2004$country[i]==9 || test2004$country[i]==13 || test2004$country[i]==17){
+    subset_2004$MIP_climate[i] <- 0
+  }
+  else{
+    if (test2004$v028[i]==60 || test2004$v028[i]==61) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-testest2004 <- subset_2004 %>% count(country_name)
+#Austria (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==1){
+    if (test2004$v028[i]==9) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-summary_2004 <- merge.data.frame(summary_2004, testest2004, by="country_name")
+#Britain (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==3){
+    if (test2004$v028[i]==25 || test2004$v028[i]==29 || test2004$v028[i]==47) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset.xlsx")
-write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx")
+#France
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==9){
+    if (test2004$v028[i]==44 || test2004$v028[i]==45) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-summary_2004_new <- subset_2004 %>% group_by(country_name) %>% summarise(sum(climate_in_general==1))
+#Ireland
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==13){
+    if (test2004$v028[i]==60 || test2004$v028[i]==61 || test2004$v028[i]==3) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-summary_2004_new <- merge.data.frame(summary_2004_new, testest2004, by="country_name")
+#Luxembourg (only MIP was asked)
+for (i in 1:nrow(subset_2004)){
+  if (test2004$country[i]==17){
+    if (test2004$v028[i]==2) {
+      subset_2004$MIP_climate[i] <- 1
+    }
+  }
+}
 
-write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset_new.xlsx")
-write_excel_csv(summary_2004_new,"/Users/kaspermichelsen/EES_data/2004_summary_new.xlsx")
+# summary_2004 <- subset_2004 %>% group_by(country_name) %>% summarise(sum(v285==1))
+# 
+# testest2004 <- subset_2004 %>% count(country_name)
+
+# summary_2004 <- merge.data.frame(summary_2004, testest2004, by="country_name")
+# 
+write_dta(subset_2004,"/Users/kaspermichelsen/EES_data/df2004.dta")
+# write_excel_csv(summary_2004,"/Users/kaspermichelsen/EES_data/2004_summary.xlsx")
+# 
+# summary_2004_new <- subset_2004 %>% group_by(country_name) %>% summarise(sum(climate_in_general==1))
+# 
+# summary_2004_new <- merge.data.frame(summary_2004_new, testest2004, by="country_name")
+# 
+# write_excel_csv(subset_2004,"/Users/kaspermichelsen/EES_data/2004_subset_new.xlsx")
+# write_excel_csv(summary_2004_new,"/Users/kaspermichelsen/EES_data/2004_summary_new.xlsx")
 ```
 
 
@@ -772,21 +848,24 @@ write_csv(pt, "/Users/kaspermichelsen/EES_data/parlgov_merge_file.csv")
 
 merge2009parlgov <- subset_2009
 merge2009parlgov <- rename(merge2009parlgov, ees = q4)
-mp2009 <- merge.data.frame(merge2009parlgov, pt, by="ees")
+mp2009_test <- merge.data.frame(merge2009parlgov, pt, by="ees", all = T)
 mp2009 <- rename(mp2009, Best_party_to_deal_with_MIP=ees)
 mp2009_new <- select(mp2009, "Best_party_to_deal_with_MIP", "MIP_climate", "climate_in_general", "party_name_short", "party_name_english", "party_id", "cmp", "countryName", "q27", "q28", "q87", "t100")
+
+mp2009_test <- rename(mp2009_test, Best_party_to_deal_with_MIP=ees)
+mp2009_new_test <- select(mp2009_test, "Best_party_to_deal_with_MIP", "MIP_climate", "climate_in_general", "party_name_short", "party_name_english", "party_id", "cmp", "countryName", "q27", "q28", "q87", "t100")
 
 NVA2009 <- read_csv("parlgov_merge_file_NVA - parlgov_merge_file.csv")
 VI2009 <- read_csv("parlgov_merge_file_VI - parlgov_merge_file.csv")
 PID2009 <- read_csv("parlgov_merge_file_PID - parlgov_merge_file.csv")
 
-mp2009NVA <- merge.data.frame(mp2009_new, NVA2009, by="q27")
-mp2009VI <- merge.data.frame(mp2009NVA, VI2009, by="q28")
-mpfinal <- merge.data.frame(mp2009VI, PID2009, by="q87")
-
-uniq1 <- unique(mp2009VI)
+mp2009NVA <- merge.data.frame(mp2009_new_test, NVA2009, by="q27", all = T)
+mp2009VI <- merge.data.frame(mp2009NVA, VI2009, by="q28", all = T)
+mpfinal <- merge.data.frame(mp2009VI, PID2009, by="q87", all = T)
 
 mpfinal <- unique(mpfinal)
+
+
 mpfinal <- rename(mpfinal, National_Vote_Recall_NVA = q27)
 mpfinal <- rename(mpfinal, Vote_Intention_VI = q28)
 mpfinal <- rename(mpfinal, Party_Identification_PID = q87)
@@ -795,7 +874,9 @@ subset_2009_uniq <- unique(mp2009_new)
 Ccount2009_1 <- mp2009_new %>% count(countryName)
 
 
-write_excel_csv(mpfinal,"/Users/kaspermichelsen/EES_data/final2009.xlsx")
+write_dta(subset_2009,"/Users/kaspermichelsen/EES_data/df2009.dta")
+write_dta(subset_2014,"/Users/kaspermichelsen/EES_data/df2014.dta")
+
 ```
 
 ## R Markdown
